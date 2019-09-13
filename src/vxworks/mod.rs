@@ -12,47 +12,6 @@ impl ::Clone for DIR {
     }
 }
 
-f! {
-    pub fn CMSG_ALIGN(len: usize) -> usize {
-    	len + ::mem::size_of::<usize>() - 1 & !(::mem::size_of::<usize>() - 1)
-    }
-
-    pub fn CMSG_NXTHDR(mhdr: *const msghdr,
-                       cmsg: *const cmsghdr) -> *mut cmsghdr {
-	let next = cmsg as usize + CMSG_ALIGN((*cmsg).cmsg_len as usize)
-            + CMSG_ALIGN(::mem::size_of::<::cmsghdr>());
-        let max = (*mhdr).msg_control as usize
-            + (*mhdr).msg_controllen as usize;
-        if next <= max {
-            (cmsg as usize + CMSG_ALIGN((*cmsg).cmsg_len as usize))
-                as *mut ::cmsghdr
-        } else { 
-            0 as *mut ::cmsghdr
-        }
-    }
-
-    pub fn CMSG_FIRSTHDR(mhdr: *const msghdr) -> *mut cmsghdr {
-        if (*mhdr).msg_controllen as usize > 0  {
-            (*mhdr).msg_control as *mut cmsghdr
-        } else {
-            0 as *mut cmsghdr
-        }
-    }
-
-    pub fn CMSG_DATA(cmsg: *const cmsghdr) -> *mut ::c_uchar {
-	(cmsg as *mut ::c_uchar)
-            .offset(CMSG_ALIGN(::mem::size_of::<::cmsghdr>()) as isize)
-    }
-
-    pub fn CMSG_SPACE(length: ::c_uint) -> ::c_uint {
-        (CMSG_ALIGN(length as usize) + CMSG_ALIGN(::mem::size_of::<cmsghdr>()))
-            as ::c_uint
-    }
-
-    pub fn CMSG_LEN(length: ::c_uint) -> ::c_uint {
-        CMSG_ALIGN(::mem::size_of::<cmsghdr>()) as ::c_uint + length
-    }
-}
 // Throughout we use usize / isize for types that are
 // (unsigned) int in ILP32 and (unsigned) long in ILP64
 
@@ -169,9 +128,9 @@ s! {
     // b_pthread_rwlockattr_t.h
     pub struct pthread_rwlockattr_t {
         pub rwlockAttrStatus: ::c_int,
-	pub rwlockAttrPshared: ::c_int,
+        pub rwlockAttrPshared: ::c_int,
         pub rwlockAttrMaxReaders: ::c_uint,
-	pub rwlockAttrConformOpt: ::c_uint,
+        pub rwlockAttrConformOpt: ::c_uint,
     }
 
     // b_pthread_rwlock_t.h
@@ -214,7 +173,7 @@ s! {
         pub iov_base: *mut ::c_void,
         pub iov_len: ::size_t,
     }
-    
+
     pub struct msghdr {
         pub msg_name: *mut c_void,
         pub msg_namelen: socklen_t,
@@ -327,11 +286,11 @@ s! {
         // This field is a union of int and void * in vxworks
         // The size has been set to the larger of the two
         pub si_value : ::size_t,
-	pub si_errno : ::c_int,
-	pub si_status: ::c_int,
-	pub si_addr: *mut ::c_void,
- 	pub si_uid: ::uid_t,
-	pub si_pid: ::pid_t,	
+        pub si_errno : ::c_int,
+        pub si_status: ::c_int,
+        pub si_addr: *mut ::c_void,
+        pub si_uid: ::uid_t,
+        pub si_pid: ::pid_t,
     }
 
     // pthread.h (krnl)
@@ -364,15 +323,15 @@ s! {
 
     // time.h
     pub struct tm {
-    	pub tm_sec: ::c_int,
-    	pub tm_min: ::c_int,
-    	pub tm_hour: ::c_int,
-    	pub tm_mday: ::c_int,
-    	pub tm_mon: ::c_int,
-    	pub tm_year: ::c_int,
-    	pub tm_wday: ::c_int,
-    	pub tm_yday: ::c_int,
-    	pub tm_isdst: ::c_int,	
+        pub tm_sec: ::c_int,
+        pub tm_min: ::c_int,
+        pub tm_hour: ::c_int,
+        pub tm_mday: ::c_int,
+        pub tm_mon: ::c_int,
+        pub tm_year: ::c_int,
+        pub tm_wday: ::c_int,
+        pub tm_yday: ::c_int,
+        pub tm_isdst: ::c_int,
     }
 
     // in.h
@@ -433,7 +392,7 @@ s! {
     }
 
     pub struct sockaddr_un {
-	pub sun_len: u8,
+        pub sun_len: u8,
         pub sun_family: sa_family_t,
         pub sun_path: [::c_char; 104]
     }
@@ -940,7 +899,7 @@ const PTHREAD_RWLOCKATTR_INITIALIZER: pthread_rwlockattr_t =
         rwlockAttrStatus: PTHREAD_INITIALIZED_OBJ,
         rwlockAttrPshared: 1,
         rwlockAttrMaxReaders: 0,
-	rwlockAttrConformOpt:1,
+        rwlockAttrConformOpt:1,
     };
 pub const PTHREAD_RWLOCK_INITIALIZER: pthread_rwlock_t = pthread_rwlock_t {
     rwlockSemId: null_mut(),
@@ -986,6 +945,48 @@ impl ::Copy for fpos_t {}
 impl ::Clone for fpos_t {
     fn clone(&self) -> fpos_t {
         *self
+    }
+}
+
+f! {
+    pub fn CMSG_ALIGN(len: usize) -> usize {
+        len + ::mem::size_of::<usize>() - 1 & !(::mem::size_of::<usize>() - 1)
+    }
+
+    pub fn CMSG_NXTHDR(mhdr: *const msghdr,
+                       cmsg: *const cmsghdr) -> *mut cmsghdr {
+        let next = cmsg as usize + CMSG_ALIGN((*cmsg).cmsg_len as usize)
+            + CMSG_ALIGN(::mem::size_of::<::cmsghdr>());
+        let max = (*mhdr).msg_control as usize
+            + (*mhdr).msg_controllen as usize;
+        if next <= max {
+            (cmsg as usize + CMSG_ALIGN((*cmsg).cmsg_len as usize))
+                as *mut ::cmsghdr
+        } else {
+            0 as *mut ::cmsghdr
+        }
+    }
+
+    pub fn CMSG_FIRSTHDR(mhdr: *const msghdr) -> *mut cmsghdr {
+        if (*mhdr).msg_controllen as usize > 0  {
+            (*mhdr).msg_control as *mut cmsghdr
+        } else {
+            0 as *mut cmsghdr
+        }
+    }
+
+    pub fn CMSG_DATA(cmsg: *const cmsghdr) -> *mut ::c_uchar {
+        (cmsg as *mut ::c_uchar)
+            .offset(CMSG_ALIGN(::mem::size_of::<::cmsghdr>()) as isize)
+    }
+
+    pub fn CMSG_SPACE(length: ::c_uint) -> ::c_uint {
+        (CMSG_ALIGN(length as usize) + CMSG_ALIGN(::mem::size_of::<cmsghdr>()))
+            as ::c_uint
+    }
+
+    pub fn CMSG_LEN(length: ::c_uint) -> ::c_uint {
+        CMSG_ALIGN(::mem::size_of::<cmsghdr>()) as ::c_uint + length
     }
 }
 
@@ -2147,7 +2148,6 @@ pub fn posix_memalign(
         }
     }
 }
-
 
 // epoll.h
 // Unfortunately epoll is currently only supported in the VxWorks kernel
