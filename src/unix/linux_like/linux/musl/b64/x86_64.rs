@@ -47,6 +47,58 @@ s! {
         __reserved: [::c_long; 3],
     }
 
+    pub struct user_regs_struct {
+        pub r15: ::c_ulong,
+        pub r14: ::c_ulong,
+        pub r13: ::c_ulong,
+        pub r12: ::c_ulong,
+        pub rbp: ::c_ulong,
+        pub rbx: ::c_ulong,
+        pub r11: ::c_ulong,
+        pub r10: ::c_ulong,
+        pub r9: ::c_ulong,
+        pub r8: ::c_ulong,
+        pub rax: ::c_ulong,
+        pub rcx: ::c_ulong,
+        pub rdx: ::c_ulong,
+        pub rsi: ::c_ulong,
+        pub rdi: ::c_ulong,
+        pub orig_rax: ::c_ulong,
+        pub rip: ::c_ulong,
+        pub cs: ::c_ulong,
+        pub eflags: ::c_ulong,
+        pub rsp: ::c_ulong,
+        pub ss: ::c_ulong,
+        pub fs_base: ::c_ulong,
+        pub gs_base: ::c_ulong,
+        pub ds: ::c_ulong,
+        pub es: ::c_ulong,
+        pub fs: ::c_ulong,
+        pub gs: ::c_ulong,
+    }
+
+    pub struct user {
+        pub regs: user_regs_struct,
+        pub u_fpvalid: ::c_int,
+        pub i387: user_fpregs_struct,
+        pub u_tsize: ::c_ulong,
+        pub u_dsize: ::c_ulong,
+        pub u_ssize: ::c_ulong,
+        pub start_code: ::c_ulong,
+        pub start_stack: ::c_ulong,
+        pub signal: ::c_long,
+        __reserved: ::c_int,
+        #[cfg(target_pointer_width = "32")]
+        __pad1: u32,
+        pub u_ar0: *mut user_regs_struct,
+        #[cfg(target_pointer_width = "32")]
+        __pad2: u32,
+        pub u_fpstate: *mut user_fpregs_struct,
+        pub magic: ::c_ulong,
+        pub u_comm: [::c_char; 32],
+        pub u_debugreg: [::c_ulong; 8],
+    }
+
     pub struct mcontext_t {
         __private: [u64; 32],
     }
@@ -64,7 +116,21 @@ s! {
     }
 }
 
-s_no_extra_traits!{
+s_no_extra_traits! {
+    pub struct user_fpregs_struct {
+        pub cwd: ::c_ushort,
+        pub swd: ::c_ushort,
+        pub ftw: ::c_ushort,
+        pub fop: ::c_ushort,
+        pub rip: ::c_ulong,
+        pub rdp: ::c_ulong,
+        pub mxcsr: ::c_uint,
+        pub mxcr_mask: ::c_uint,
+        pub st_space: [::c_uint; 32],
+        pub xmm_space: [::c_uint; 64],
+        padding: [::c_uint; 24],
+    }
+
     pub struct ucontext_t {
         pub uc_flags: ::c_ulong,
         pub uc_link: *mut ucontext_t,
@@ -77,6 +143,60 @@ s_no_extra_traits!{
 
 cfg_if! {
     if #[cfg(feature = "extra_traits")] {
+        impl PartialEq for user_fpregs_struct {
+            fn eq(&self, other: &user_fpregs_struct) -> bool {
+                self.cwd == other.cwd
+                    && self.swd == other.swd
+                    && self.ftw == other.ftw
+                    && self.fop == other.fop
+                    && self.rip == other.rip
+                    && self.rdp == other.rdp
+                    && self.mxcsr == other.mxcsr
+                    && self.mxcr_mask == other.mxcr_mask
+                    && self.st_space == other.st_space
+                    && self
+                    .xmm_space
+                    .iter()
+                    .zip(other.xmm_space.iter())
+                    .all(|(a,b)| a == b)
+                // Ignore padding field
+            }
+        }
+
+        impl Eq for user_fpregs_struct {}
+
+        impl ::fmt::Debug for user_fpregs_struct {
+            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+                f.debug_struct("user_fpregs_struct")
+                    .field("cwd", &self.cwd)
+                    .field("ftw", &self.ftw)
+                    .field("fop", &self.fop)
+                    .field("rip", &self.rip)
+                    .field("rdp", &self.rdp)
+                    .field("mxcsr", &self.mxcsr)
+                    .field("mxcr_mask", &self.mxcr_mask)
+                    .field("st_space", &self.st_space)
+                // FIXME: .field("xmm_space", &self.xmm_space)
+                // Ignore padding field
+                    .finish()
+            }
+        }
+
+        impl ::hash::Hash for user_fpregs_struct {
+            fn hash<H: ::hash::Hasher>(&self, state: &mut H) {
+                self.cwd.hash(state);
+                self.ftw.hash(state);
+                self.fop.hash(state);
+                self.rip.hash(state);
+                self.rdp.hash(state);
+                self.mxcsr.hash(state);
+                self.mxcr_mask.hash(state);
+                self.st_space.hash(state);
+                self.xmm_space.hash(state);
+                // Ignore padding field
+            }
+        }
+
         impl PartialEq for ucontext_t {
             fn eq(&self, other: &ucontext_t) -> bool {
                 self.uc_flags == other.uc_flags
@@ -670,12 +790,12 @@ pub const CBAUD: ::tcflag_t = 0o0010017;
 pub const TAB1: ::c_int = 0x00000800;
 pub const TAB2: ::c_int = 0x00001000;
 pub const TAB3: ::c_int = 0x00001800;
-pub const CR1: ::c_int  = 0x00000200;
-pub const CR2: ::c_int  = 0x00000400;
-pub const CR3: ::c_int  = 0x00000600;
-pub const FF1: ::c_int  = 0x00008000;
-pub const BS1: ::c_int  = 0x00002000;
-pub const VT1: ::c_int  = 0x00004000;
+pub const CR1: ::c_int = 0x00000200;
+pub const CR2: ::c_int = 0x00000400;
+pub const CR3: ::c_int = 0x00000600;
+pub const FF1: ::c_int = 0x00008000;
+pub const BS1: ::c_int = 0x00002000;
+pub const VT1: ::c_int = 0x00004000;
 pub const VWERASE: usize = 14;
 pub const VREPRINT: usize = 12;
 pub const VSUSP: usize = 10;
@@ -709,14 +829,14 @@ pub const NOFLSH: ::tcflag_t = 0x00000080;
 pub const CIBAUD: ::tcflag_t = 0o02003600000;
 pub const CBAUDEX: ::tcflag_t = 0o010000;
 pub const VSWTC: usize = 7;
-pub const OLCUC:  ::tcflag_t = 0o000002;
-pub const NLDLY:  ::tcflag_t = 0o000400;
-pub const CRDLY:  ::tcflag_t = 0o003000;
+pub const OLCUC: ::tcflag_t = 0o000002;
+pub const NLDLY: ::tcflag_t = 0o000400;
+pub const CRDLY: ::tcflag_t = 0o003000;
 pub const TABDLY: ::tcflag_t = 0o014000;
-pub const BSDLY:  ::tcflag_t = 0o020000;
-pub const FFDLY:  ::tcflag_t = 0o100000;
-pub const VTDLY:  ::tcflag_t = 0o040000;
-pub const XTABS:  ::tcflag_t = 0o014000;
+pub const BSDLY: ::tcflag_t = 0o020000;
+pub const FFDLY: ::tcflag_t = 0o100000;
+pub const VTDLY: ::tcflag_t = 0o040000;
+pub const XTABS: ::tcflag_t = 0o014000;
 pub const B57600: ::speed_t = 0o010001;
 pub const B115200: ::speed_t = 0o010002;
 pub const B230400: ::speed_t = 0o010003;
@@ -794,7 +914,6 @@ pub const TIOCM_DSR: ::c_int = 0x100;
 pub const TIOCM_CD: ::c_int = TIOCM_CAR;
 pub const TIOCM_RI: ::c_int = TIOCM_RNG;
 
-extern {
+extern "C" {
     pub fn ioctl(fd: ::c_int, request: ::c_int, ...) -> ::c_int;
 }
-

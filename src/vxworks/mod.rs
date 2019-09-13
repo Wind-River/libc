@@ -1127,7 +1127,7 @@ extern {
     pub fn memset(dest: *mut c_void, c: c_int, n: size_t) -> *mut c_void;
 }
 
-extern {
+extern "C" {
     pub fn getpwnam(name: *const ::c_char) -> *mut passwd;
     pub fn getpwuid(uid: ::uid_t) -> *mut passwd;
 
@@ -1475,7 +1475,7 @@ extern {
     pub fn pthread_create(
         pThread: *mut ::pthread_t,
         pAttr: *const ::pthread_attr_t,
-        start_routine: extern fn(*mut ::c_void) -> *mut ::c_void,
+        start_routine: extern "C" fn(*mut ::c_void) -> *mut ::c_void,
         value: *mut ::c_void,
     ) -> ::c_int;
 
@@ -1487,9 +1487,9 @@ extern {
 
     // int pthread_atfork (void (*)(void), void (*)(void), void (*)(void));
     pub fn pthread_atfork(
-        prepare: ::Option<unsafe extern fn()>,
-        parent: ::Option<unsafe extern fn()>,
-        child: ::Option<unsafe extern fn()>,
+        prepare: ::Option<unsafe extern "C" fn()>,
+        parent: ::Option<unsafe extern "C" fn()>,
+        child: ::Option<unsafe extern "C" fn()>,
     ) -> ::c_int;
     // stat.h
     pub fn fstat(fildes: ::c_int, buf: *mut stat) -> ::c_int;
@@ -1618,7 +1618,7 @@ extern {
     // pthread.h
     pub fn pthread_key_create(
         key: *mut ::pthread_key_t,
-        dtor: ::Option<unsafe extern fn(*mut ::c_void)>,
+        dtor: ::Option<unsafe extern "C" fn(*mut ::c_void)>,
     ) -> ::c_int;
 
     // pthread.h
