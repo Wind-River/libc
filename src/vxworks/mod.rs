@@ -254,7 +254,7 @@ s! {
     // signal.h
 
     pub struct sigaction {
-        pub sa_u     : ::sa_u_t,
+        pub sa_u     : ::sighandler_t,
         pub sa_mask  : ::sigset_t,
         pub sa_flags : ::c_int,
     }
@@ -414,13 +414,13 @@ s_no_extra_traits! {
         pub __ss_align : i32,
         pub __ss_pad2  : [::c_char; _SS_PAD2SIZE],
     }
-
+/*
     pub union sa_u_t {
         pub sa_handler : Option<unsafe extern "C" fn(::c_int) -> !>,
         pub sa_sigaction: Option<unsafe extern "C" fn(::c_int, *mut ::siginfo_t,
                                         *mut ::c_void) -> !>,
     }
-
+*/
     pub union sigval {
         pub sival_int : ::c_int,
         pub sival_ptr : *mut ::c_void,
@@ -474,7 +474,7 @@ cfg_if! {
                     .finish()
             }
         }
-
+/*
         impl PartialEq for sa_u_t {
             fn eq(&self, other: &sa_u_t) -> bool {
                 unsafe {
@@ -516,7 +516,7 @@ cfg_if! {
                 }
             }
         }
-
+*/
         impl PartialEq for sigval {
             fn eq(&self, other: &sigval) -> bool {
                 unsafe { self.sival_ptr as usize == other.sival_ptr as usize }
