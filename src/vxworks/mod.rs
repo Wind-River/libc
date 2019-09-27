@@ -270,7 +270,7 @@ s! {
     pub struct siginfo_t {
         pub si_signo : ::c_int,
         pub si_code  : ::c_int,
-        pub si_value : ::sigval,
+        pub si_value : usize,
         pub si_errno : ::c_int,
         pub si_status: ::c_int,
         pub si_addr: *mut ::c_void,
@@ -421,11 +421,12 @@ s_no_extra_traits! {
                                                         *mut ::siginfo_t,
                                                         *mut ::c_void) -> !>,
     }
-
+/*
     pub union sigval {
         pub sival_int : ::c_int,
         pub sival_ptr : *mut ::c_void,
     }
+*/
 }
 
 cfg_if! {
@@ -517,7 +518,7 @@ cfg_if! {
                 }
             }
         }
-
+/*
         impl PartialEq for sigval {
             fn eq(&self, other: &sigval) -> bool {
                 unsafe { self.sival_ptr as usize == other.sival_ptr as usize }
@@ -536,6 +537,7 @@ cfg_if! {
                 unsafe { (self.sival_ptr as usize).hash(state) };
             }
         }
+         */
     }
 }
 
@@ -2050,14 +2052,14 @@ extern "C" {
     pub fn sigqueue(
         __pid: pid_t,
         __signo: ::c_int,
-        __value: ::sigval,
+        __value: usize,
     ) -> ::c_int;
 
     // signal.h for user
     pub fn _sigqueue(
         rtpId: ::RTP_ID,
         signo: ::c_int,
-        pValue: *const ::sigval,
+        pValue: *const usize,
         sigCode: ::c_int,
     ) -> ::c_int;
 
