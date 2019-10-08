@@ -27,6 +27,7 @@ fn do_ctest() {
         t if t.contains("solaris") => return test_solaris(t),
         t if t.contains("wasi") => return test_wasi(t),
         t if t.contains("windows") => return test_windows(t),
+        t if t.contains("vxworks") => return test_vxworks(t),
         t => panic!("unknown target {}", t),
     }
 }
@@ -1924,6 +1925,157 @@ fn test_emscripten(target: &str) {
     });
 
     // FIXME: test linux like
+    cfg.generate("../src/lib.rs", "main.rs");
+}
+
+fn test_vxworks(target: &str) {
+    assert!(target.contains("vxworks"));
+
+    let mut cfg = ctest::TestGenerator::new();
+    headers! { cfg:
+               "vxWorks.h",
+               "yvals.h",
+               "nfs/nfsCommon.h",
+               "rtpLibCommon.h",
+               "randomNumGen.h",
+               "taskLib.h",
+               "sysLib.h",
+               "ioLib.h",
+               "inetLib.h",
+               "socket.h",
+               "errnoLib.h",
+               "ctype.h",
+               "dirent.h",
+               "dlfcn.h",
+               "elf.h",
+               "fcntl.h",
+               "grp.h",
+               "sys/poll.h",
+               "ifaddrs.h",
+               "langinfo.h",
+               "limits.h",
+               "link.h",
+               "locale.h",
+               "sys/stat.h",
+               "netdb.h",
+               "pthread.h",
+               "pwd.h",
+               "sched.h",
+               "semaphore.h",
+               "signal.h",
+               "stddef.h",
+               "stdint.h",
+               "stdio.h",
+               "stdlib.h",
+               "string.h",
+               "sys/file.h",
+               "sys/ioctl.h",
+               "sys/socket.h",
+               "sys/time.h",
+               "sys/times.h",
+               "sys/types.h",
+               "sys/uio.h",
+               "sys/un.h",
+               "sys/utsname.h",
+               "sys/wait.h",
+               "netinet/tcp.h",
+               "syslog.h",
+               "termios.h",
+               "time.h",
+               "ucontext.h",
+               "unistd.h",
+               "utime.h",
+               "wchar.h",
+               "errno.h",
+    }
+
+    cfg.skip_struct(move |ty| {
+        match ty {
+            "passwd"      |
+            //the below definitions is part of public/private/ 
+            "_Vx_EVENTS_RSRC" |
+            "_Vx_semaphore" |
+            //Avaliable in Kernel space.
+            "epoll_event" => true,
+            _ => false,
+        }
+    });
+
+    /* Fix me */
+    cfg.skip_const(move |name| match name {
+        "SIG_DFL"
+        | "SIG_IGN"
+        | "SIG_ERR"
+        | "EPOLLPRI"
+        | "EPOLLIN"
+        | "EPOLLOUT"
+        | "EPOLLERR"
+        | "EPOLLHUP"
+        | "EPOLLRDHUP"
+        | "EPOLLONESHOT"
+        | "EPOLLET"
+        | "EPOLL_CTL_ADD"
+        | "EPOLL_CTL_DEL"
+        | "EPOLL_CTL_MOD"
+        | "S_nfsLib_NFSERR_XDEV"
+        | "S_nfsLib_NFSERR_NODEV"
+        | "S_nfsLib_NFSERR_MLINK"
+        | "S_IFDEVMEM"
+        | "CHILD"
+        | "TIME_RELTIME"
+        | "RTLD_DEFAULT"
+        | "EIOA"
+        | "FIONBIO"
+        | "FIOWRITE"
+        | "FIONREAD"
+        | "VXSIM_EWOULDBLOCK" => true,
+        _ => false,
+    });
+
+    /* Fix me */
+    cfg.skip_type(move |ty| match ty {
+        "stat64" | "sighandler_t" | "off64_t" => true,
+        _ => false,
+    });
+
+    cfg.skip_field_type(move |struct_, field| match (struct_, field) {
+        ("siginfo_t", "si_value")
+        | ("stat", "st_size")
+        | ("sigaction", "sa_u") => true,
+        _ => false,
+    });
+
+    cfg.skip_roundtrip(move |s| match s {
+        _ => false,
+    });
+
+    cfg.type_name(move |ty, is_struct, is_union| match ty {
+        "DIR" | "FILE" | "Dl_info" | "RTP_DESC" => ty.to_string(),
+        t if is_union => format!("union {}", t),
+        t if t.ends_with("_t") => t.to_string(),
+        t if is_struct => format!("struct {}", t),
+        t => t.to_string(),
+    });
+
+    /* Fix me */
+    cfg.skip_fn(move |name| match name {
+        "sigqueue" | "_sigqueue" | "_rtld_dladdr" | "getpwnam"
+        | "getpwuid" | "pclose" | "execl" | "execle" | "execlp" | "execv"
+        | "execve" | "renameat" | "readlinkat" | "mkdirat" | "linkat"
+        | "fchownat" | "fchmodat" | "openat" | "fdopendir" | "symlinkat"
+        | "lchown" | "setpgid" | "fstatat" | "setsid" | "tcgetpgrp"
+        | "tcsetpgrp" | "killpg" | "mlock" | "munlock" | "mlockall"
+        | "munlockall" | "mmap" | "munmap" | "if_nametoindex"
+        | "if_indextoname" | "flock" | "res_init" | "mknod" | "chroot"
+        | "getsid" | "tcdrain" | "tcflow" | "tcflush" | "tcgetsid"
+        | "tcsendbreak" | "mkdtemp" | "nice" | "grantpt" | "posix_openpt"
+        | "ptsname" | "unlockpt" | "strcasestr" | "socketpair"
+        | "pwrite64" | "pread64" | "fork" | "_pathIsAbsolute" | "execvp"
+        | "setgroups" | "signal" | "getpagesize" | "dlclose" | "dlsym"
+        | "dlerror" | "dlopen" | "setrlimit" | "getrlimit" => true,
+        _ => false,
+    });
+
     cfg.generate("../src/lib.rs", "main.rs");
 }
 
