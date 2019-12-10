@@ -2011,7 +2011,8 @@ fn test_vxworks(target: &str) {
     cfg.skip_field_type(move |struct_, field| match (struct_, field) {
         ("siginfo_t", "si_value")
         | ("stat", "st_size")
-        | ("sigaction", "sa_u") => true,
+        | ("sigaction", "sa_u")
+        | ("pthread_attr_t", "threadAttrSchedparam") => true,
         _ => false,
     });
 

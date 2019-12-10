@@ -220,18 +220,12 @@ s! {
                          pub st_reserved4 : ::c_int,
     }
 
-    //b_struct__Timespec.h
-    pub struct _Timespec {
-        pub tv_sec  : ::time_t,
-        pub tv_nsec : ::c_long,
-    }
-
     // b_struct__Sched_param.h
-    pub struct _Sched_param {
+    pub struct sched_param {
         pub sched_priority: ::c_int, /* scheduling priority */
         pub sched_ss_low_priority: ::c_int,    /* low scheduling priority */
-        pub sched_ss_repl_period: ::_Timespec, /* replenishment period */
-        pub sched_ss_init_budget: ::_Timespec, /* initial budget */
+        pub sched_ss_repl_period: ::timespec, /* replenishment period */
+        pub sched_ss_init_budget: ::timespec, /* initial budget */
         pub sched_ss_max_repl: ::c_int,        /* max pending replenishment */
 
     }
@@ -248,7 +242,7 @@ s! {
         pub threadAttrSchedpolicy     : ::c_int,
         pub threadAttrName            : *mut ::c_char,
         pub threadAttrOptions         : ::c_int,
-        pub threadAttrSchedparam      : ::_Sched_param,
+        pub threadAttrSchedparam      : ::sched_param,
     }
 
     // signal.h
@@ -638,6 +632,11 @@ pub const EWOULDBLOCK: ::c_int = 70;
 pub const ENOSYS: ::c_int = 71;
 pub const EDQUOT: ::c_int = 83;
 pub const ESTALE: ::c_int = 88;
+
+pub const SCHED_FIFO: c_int = 0x1;
+pub const SCHED_RR: c_int = 0x2;
+pub const SCHED_OTHER: c_int = 0x4;
+pub const SCHED_SPORADIC: c_int = 0x8;
 
 // NFS errnos: Refer to pkgs_v2/storage/fs/nfs/h/nfs/nfsCommon.h
 const M_nfsStat: ::c_int = 48 << 16;
@@ -1357,83 +1356,64 @@ extern "C" {
 
     // pthread.h
     pub fn pthread_mutexattr_init(attr: *mut pthread_mutexattr_t) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_mutexattr_destroy(
         attr: *mut pthread_mutexattr_t,
     ) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_mutexattr_settype(
         pAttr: *mut ::pthread_mutexattr_t,
         pType: ::c_int,
     ) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_mutex_init(
         mutex: *mut pthread_mutex_t,
         attr: *const pthread_mutexattr_t,
     ) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_mutex_destroy(mutex: *mut pthread_mutex_t) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_mutex_lock(mutex: *mut pthread_mutex_t) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_mutex_trylock(mutex: *mut pthread_mutex_t) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_mutex_timedlock(
         attr: *mut pthread_mutex_t,
         spec: *const timespec,
     ) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_mutex_unlock(mutex: *mut pthread_mutex_t) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_attr_setname(
         pAttr: *mut ::pthread_attr_t,
         name: *mut ::c_char,
     ) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_attr_setstacksize(
         attr: *mut ::pthread_attr_t,
         stacksize: ::size_t,
     ) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_attr_getstacksize(
         attr: *const ::pthread_attr_t,
         size: *mut ::size_t,
     ) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_attr_init(attr: *mut ::pthread_attr_t) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_create(
         pThread: *mut ::pthread_t,
         pAttr: *const ::pthread_attr_t,
         start_routine: extern "C" fn(*mut ::c_void) -> *mut ::c_void,
         value: *mut ::c_void,
     ) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_attr_destroy(thread: *mut ::pthread_attr_t) -> ::c_int;
-
-    // pthread.h
     pub fn pthread_detach(thread: ::pthread_t) -> ::c_int;
-
     // int pthread_atfork (void (*)(void), void (*)(void), void (*)(void));
     pub fn pthread_atfork(
         prepare: ::Option<unsafe extern "C" fn()>,
         parent: ::Option<unsafe extern "C" fn()>,
         child: ::Option<unsafe extern "C" fn()>,
     ) -> ::c_int;
+    pub fn pthread_getschedparam(
+        thread: pthread_t,
+        pPolicy: *mut c_int,
+        pParam: *mut sched_param,
+    ) -> c_int;
+    pub fn pthread_setschedparam(
+        thread: pthread_t,
+        policy: c_int,
+        pParam: *const sched_param,
+    ) -> c_int;
+    pub fn pthread_setschedprio(thread: pthread_t, pri: c_int) -> c_int;
+
     // stat.h
     pub fn fstat(fildes: ::c_int, buf: *mut stat) -> ::c_int;
 
